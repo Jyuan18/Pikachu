@@ -48,7 +48,7 @@
 import os
 import argparse
 import faiss
-from transformers import AutoTokenizer, AutoModel, AutoModelForCausualLM
+from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
 import torch
 from tqdm import tqdm
 
@@ -81,7 +81,8 @@ def generate_rag_prompt(data_point):
 class DocumentEmbedder:
     def __init__(
         self,
-        model_name='BAAI/bge-large-zh-v1.5',
+        # model_name='BAAI/bge-large-zh-v1.5',
+        model_name='/dibai/llm_models/bge-large-zh-v1.5',
         max_length=128,
         max_number_of_sentences=20
     ):
@@ -111,11 +112,12 @@ class DocumentEmbedder:
 class GenerativeModel:
     def __init__(
         self,
-        model_path='Qwen/Qwen1.5-0.5B',
+        # model_path='Qwen/Qwen1.5-0.5B',
+        model_path='Qwen1.5-0.5B-Chat',
         max_input_length=200,
         max_generated_length=200
     ):
-        self.model = AutoModelForCausualLM.from_pretrained(
+        self.model = AutoModelForCausalLM.from_pretrained(
             model_path,
             device_map='auto',
             torch_dtype=torch.float16
@@ -143,13 +145,15 @@ class GenerativeModel:
             max_length=self.max_input_length,
             return_tensors='pt'
         )
+        print('encoded_input:', encoded_input)
 
         outputs = self.model.generate(
             input_ids=encoded_input['input_ids'].to(self.device),
             attention_mask=encoded_input['attention_mask'].to(self.device),
             max_new_tokens=self.max_generated_length,
-            do_sample=False
+            do_sample=True
         )
+        print('outputs:', outputs)
 
         decoder_text = self.tokenizer.batch_decode(
             outputs, skip_special_tokens=True)
@@ -168,7 +172,7 @@ if __name__ == '__main__':
     parser.add_argument('--generative_model',
                         help='The Huggingface path to the generative model to use',
                         default='Writer/camel-5b-hf')
-    parser.add_argument('--nubmer_of_docs',
+    parser.add_argument('--number_of_docs',
                         help='The number of relevant documents to use for context',
                         default=2)
     args = parser.parse_args()
@@ -177,12 +181,13 @@ if __name__ == '__main__':
     # keep track of the original documents filepath
     print('Splitting documents into sentences...')
     documents = {}
-    for idx, file in enumerate(tqdm(os.listdir(args.documents_directory)[:10])):
-        current_filepath = os.path.join(args.documents_directory, file)
+    for idx, file in enumerate(tqdm(os.listdir(args.document_directory)[:10])):
+        current_filepath = os.path.join(args.document_directory, file)
         text, sentences = process_file(current_filepath)
         documents[idx] = {'file_path': file,
                           'sentences': sentences,
                           'document_text': text}
+    print('documents:', documents)
     
     # now for all sentences  get embeddings
     print('Getting document embeddings...')
@@ -196,22 +201,26 @@ if __name__ == '__main__':
     # concatenate all embeddings
     embeddings = torch.concat(embeddings, dim=0).data.cpu().numpy()
     embedding_dimensions = embeddings.shape[1]
+    print('embeddings:', embeddings)
 
     # use faiss to build an index we can use to search through the embeddings
     faiss_index = faiss.IndexFlatIP(int(embedding_dimensions))
     faiss_index.add(embeddings)
 
-    question = 'Who is you'
+    question = '请说出下面诗句的作者'
     query_embedding = document_embedder.get_document_embeddings([question])
     distances, indices = faiss_index.search(query_embedding.data.cpu().numpy(),
-                                            k=int(args.numeber_of_docs))
+                                            k=int(args.number_of_docs))
+    print('indices:', indices)
     
     # use the k-closest documents to provide context to the generative model's answer
     context = ''
     for idx in indices[0]:
         context += documents[idx]['document_text']
+    print('context:', context)
     rag_prompt = generate_rag_prompt({'instruction': question,
                                       'input': context})
+    print('rag_prompt:', rag_prompt)
     
     # use the generative model to give an answer to the question
     # use the retrieved documents for context
@@ -220,5 +229,17 @@ if __name__ == '__main__':
                                        max_input_length=200,
                                        max_generated_length=200)
     answer = generative_model.answer_prompt(
-        rag_prompt)[0].split('### Response:')[1]
+        rag_prompt)[0].split('### Response:')[0]
+    # print(generative_model.answer_prompt)
     print(answer)
+
+"""
+python 01simpleRAG.py --document_directory ./rag_documents --embedding_model /dibai/llm_models/bge-large-zh-v1.5 --generative_model /dibai/llm_models/Qwen1.5-0.5B-Chat
+faiss向量库
+huggingface中transformers库中AutoTokenizer, AutoModel, AutoModelForCausalLM用法
+    tokenizer定义\tokenize\encode
+    model定义\config\model.generate\
+    config定义
+分割文档spacy/递归字符/...
+rag流程
+"""
