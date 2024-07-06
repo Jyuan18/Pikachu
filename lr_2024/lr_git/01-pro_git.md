@@ -111,4 +111,53 @@ git add后接要跟踪的文件或目录的路径,如果是目录的话要说明
 `git log --stat`仅显示简要的增改行数统计
 `git log --pretty=oneline`short\full\fuller 通过不同选项展示不同的提交信息
 `git log --pretty=format:"%h - %an, %ar : %s"`
-![格式占位符][assets/image.png]
+
+![alt text](https://github.com/Jyuan18/Pikachu/blob/main/assets/image.png)
+#### 2.3.1 限制输出长度
+`git log --since=2.weeks`
+#### 2.3.2 使用图形化工具查阅历史
+
+### 2.4 撤销操作
+#### 2.4.1 修改最后一次提交
+`git commit --amend`
+#### 2.4.2 取消已经暂存的文件
+`git reset HEAD xxx`
+#### 2.4.3 取消对文件的修改
+`git checkout xxx`
+
+### 2.5 远程仓库的使用
+远程仓库是指托管在网络上的项目仓库,可能会有好多个,协作需要推送或拉取数据
+#### 2.5.1 查看当前的远程仓库
+`git remote`列出每个远程库的简短名字,克隆完某个项目后,至少可以看到一个名为origin的远程库,git默认使用这个名字标识克隆的原始仓库
+`git remote -v`--verbose的简写,显示对应的克隆地址
+#### 2.5.2 添加远程仓库
+`git remote add [shortname] [url]`
+#### 2.5.3 从远程仓库抓取数据到本地
+`git fetch [remote-name]`
+#### 2.5.4 推送数据到远程仓库
+`git push [remote-name] [branch-name]`把本地的branch-Name分支推送到remote-name服务器上
+#### 2.5.5 查看远程仓库信息
+`git remote show origin`
+#### 2.5.6 远程仓库的删除和重命名
+`git remote rename name1 name2`
+`git remote rm xxx`删除远端仓库
+
+### 2.6 打标签
+#### 2.6.1 列显已有的标签
+`git tag`
+`git tag -1 'v1.4.*'`
+#### 2.6.2 新建标签
+> 轻量级lightweight和含附注的annotated
+#### 2.6.3 含附注的标签
+`git tag -a v1.2 -m 'xxx'`
+`git show v1.2`
+#### 2.6.4 签署标签
+`git tag -s v1.2 -m 'xxx'`
+#### 2.6.5 轻量级标签
+`git tag v1.4-1w`
+#### 2.6.6 验证标签
+`git tag -v v1.2`
+#### 2.6.7 后期加注标签
+#### 2.6.8 分享标签
+
+### 2.7 技巧和窍门
