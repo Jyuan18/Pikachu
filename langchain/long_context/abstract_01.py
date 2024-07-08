@@ -98,6 +98,10 @@ class Qwen(LLM, ABC):
         response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
         return response
     
+    def get_num_tokens(self, text: str) -> int:
+        tokenized_text = self.tokenizer(text, return_tensors="pt")
+        return len(tokenized_text.input_ids[0])
+    
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
@@ -130,8 +134,7 @@ map_template = """
 map_prompt = PromptTemplate.from_template(map_template)
 map_chain = LLMChain(llm=llm, prompt=map_prompt)
 
-
-# 
+#
 llm = Qwen()
 
 prompt_template = """总结下面法律文本内容,要求保留原文中的关键信息.
