@@ -138,6 +138,6 @@ if __name__ == '__main__':
 
 
 # 处理文档数据集
-    result = chain.invoke(texts)
+    result = map_chain.invoke(texts)
 
     print(result)
