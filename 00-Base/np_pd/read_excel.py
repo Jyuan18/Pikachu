@@ -3,8 +3,10 @@ import pandas as pd
 df = pd.read_excel('./data.xlsx', sheet_name=0)
 
 columns_name = df.columns.values
+print(columns_name)
 
 all_prompts = []
+print(df.index.values.max())
 
 for i in range((df.index.values.max()+1)):
     prompt = ""
